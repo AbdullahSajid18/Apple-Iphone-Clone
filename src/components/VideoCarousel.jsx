@@ -1,10 +1,11 @@
-import { useRef } from "react";
-import { hightlightsSlides } from "../constants";
-import { useState } from "react";
-import { useEffect } from "react";
 import gsap from "gsap";
-import { pauseImg, playImg, replayImg } from "../utils";
 import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/all";
+gsap.registerPlugin(ScrollTrigger);
+import { useEffect, useRef, useState } from "react";
+
+import { hightlightsSlides } from "../constants";
+import { pauseImg, playImg, replayImg } from "../utils";
 
 const VideoCarousel = () => {
   const videoRef = useRef([]);
@@ -18,8 +19,8 @@ const VideoCarousel = () => {
     isLastVideo: false,
     isPlaying: false,
   });
-  const [loadedData, setLoadedData] = useState([]);
 
+  const [loadedData, setLoadedData] = useState([]);
   const { isEnd, isLastVideo, startPlay, videoId, isPlaying } = video;
 
   useGSAP(() => {
@@ -45,38 +46,26 @@ const VideoCarousel = () => {
   }, [isEnd, videoId]);
 
   useEffect(() => {
-    if (loadedData.length > 3) {
-      if (!isPlaying) {
-        videoRef.current[videoId].pause();
-      } else {
-        startPlay && videoRef.current[videoId].play();
-      }
-    }
-  }, [startPlay, videoId, isPlaying, loadedData]);
-
-  const handleLoadedMetaData = (i, e) => setLoadedData((pre) => [...pre, e]);
-
-  useEffect(() => {
     let currentProgress = 0;
     let span = videoSpanRef.current;
 
     if (span[videoId]) {
-      // animate the progress of the video
       let animation = gsap.to(span[videoId], {
         onUpdate: () => {
           const progress = Math.ceil(animation.progress() * 100);
 
-          if (progress !== currentProgress) {
+          if (progress != currentProgress) {
             currentProgress = progress;
 
             gsap.to(videoDivRef.current[videoId], {
               width:
                 window.innerWidth < 760
-                  ? "10vw"
+                  ? "10vw" // mobile
                   : window.innerWidth < 1200
-                  ? "10vw"
-                  : "4vw",
+                  ? "10vw" // tablet
+                  : "4vw", // laptop
             });
+
             gsap.to(span[videoId], {
               width: `${currentProgress}%`,
               backgroundColor: "white",
@@ -84,6 +73,7 @@ const VideoCarousel = () => {
           }
         },
 
+        
         onComplete: () => {
           if (isPlaying) {
             gsap.to(videoDivRef.current[videoId], {
@@ -96,9 +86,10 @@ const VideoCarousel = () => {
         },
       });
 
-      if (videoId === 0) {
+      if (videoId == 0) {
         animation.restart();
       }
+
       const animationUpdate = () => {
         animation.progress(
           videoRef.current[videoId].currentTime /
@@ -114,31 +105,44 @@ const VideoCarousel = () => {
     }
   }, [videoId, startPlay]);
 
+  useEffect(() => {
+    if (loadedData.length > 3) {
+      if (!isPlaying) {
+        videoRef.current[videoId].pause();
+      } else {
+        startPlay && videoRef.current[videoId].play();
+      }
+    }
+  }, [startPlay, videoId, isPlaying, loadedData]);
+
   const handleProcess = (type, i) => {
     switch (type) {
       case "video-end":
         setVideo((pre) => ({ ...pre, isEnd: true, videoId: i + 1 }));
         break;
+
       case "video-last":
         setVideo((pre) => ({ ...pre, isLastVideo: true }));
         break;
+
       case "video-reset":
-        setVideo((pre) => ({
-          ...pre,
-          isLastVideo: false,
-          videoId: 0,
-        }));
+        setVideo((pre) => ({ ...pre, videoId: 0, isLastVideo: false }));
         break;
+
       case "pause":
         setVideo((pre) => ({ ...pre, isPlaying: !pre.isPlaying }));
         break;
+
       case "play":
         setVideo((pre) => ({ ...pre, isPlaying: !pre.isPlaying }));
         break;
+
       default:
         return video;
     }
   };
+
+  const handleLoadedMetaData = (i, e) => setLoadedData((pre) => [...pre, e]);
 
   return (
     <>
@@ -146,27 +150,24 @@ const VideoCarousel = () => {
         {hightlightsSlides.map((list, i) => (
           <div key={list.id} id="slider" className="pr-10 sm:pr-20">
             <div className="video-carousel_container">
-              <div className="w-full h-full overflow-hidden bg-black rounded-3xl flex-center">
+              <div className="w-full h-full overflow-hidden bg-black flex-center rounded-3xl">
                 <video
                   id="video"
                   playsInline={true}
-                  preload="auto"
-                  muted
                   className={`${
                     list.id === 2 && "translate-x-44"
                   } pointer-events-none`}
+                  preload="auto"
+                  muted
                   ref={(el) => (videoRef.current[i] = el)}
                   onEnded={() =>
                     i !== 3
                       ? handleProcess("video-end", i)
                       : handleProcess("video-last")
                   }
-                  onPlay={() => {
-                    setVideo((prevVideo) => ({
-                      ...prevVideo,
-                      isPlaying: true,
-                    }));
-                  }}
+                  onPlay={() =>
+                    setVideo((pre) => ({ ...pre, isPlaying: true }))
+                  }
                   onLoadedMetadata={(e) => handleLoadedMetaData(i, e)}
                 >
                   <source src={list.video} type="video/mp4" />
@@ -174,8 +175,8 @@ const VideoCarousel = () => {
               </div>
 
               <div className="absolute top-12 left-[5%] z-10">
-                {list.textLists.map((text) => (
-                  <p key={text} className="text-xl font-medium md:text-2xl">
+                {list.textLists.map((text, i) => (
+                  <p key={i} className="text-xl font-medium md:text-2xl">
                     {text}
                   </p>
                 ))}
@@ -187,19 +188,18 @@ const VideoCarousel = () => {
 
       <div className="relative mt-10 flex-center">
         <div className="py-5 bg-gray-300 rounded-full flex-center px-7 backdrop-blur">
-          {videoRef.current.length > 0 &&
-            videoRef.current.map((_, i) => (
+          {videoRef.current.map((_, i) => (
+            <span
+              key={i}
+              className="relative w-3 h-3 mx-2 bg-gray-200 rounded-full cursor-pointer"
+              ref={(el) => (videoDivRef.current[i] = el)}
+            >
               <span
-                key={i}
-                className="relative w-3 h-3 mx-2 bg-gray-200 rounded-full cursor-pointer"
-                ref={(el) => (videoDivRef.current[i] = el)}
-              >
-                <span
-                  className="absolute w-full h-full rounded-full"
-                  ref={(el) => (videoSpanRef.current[i] = el)}
-                />
-              </span>
-            ))}
+                className="absolute w-full h-full rounded-full"
+                ref={(el) => (videoSpanRef.current[i] = el)}
+              />
+            </span>
+          ))}
         </div>
 
         <button className="control-btn">

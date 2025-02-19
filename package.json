@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@sentry/react": "^9.1.0",
+    "@sentry/vite-plugin": "^3.1.2",
     "gsap": "^3.12.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
